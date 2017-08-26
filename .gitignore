@@ -69,4 +69,3 @@ hs_err_pid*
 .gitignore
 .idea/
 chesssparkminer.iml
-src/
