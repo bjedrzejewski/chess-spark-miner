@@ -66,4 +66,9 @@ public class ScoreCount implements java.io.Serializable{
                 whiteWinCount + a.whiteWinCount,
                 blackWinCount + a.blackWinCount);
     }
+
+    @Override
+    public String toString() {
+        return getAverageScore() + "|" + count + "|" + drawCount  + "|" + whiteWinCount  + "|" + blackWinCount;
+    }
 }

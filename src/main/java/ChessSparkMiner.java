@@ -9,7 +9,7 @@ import java.util.List;
 
 public class ChessSparkMiner {
     public static void main(String[] args) {
-        String pgnFile = "/Users/bartoszjedrzejewski/github/chesssparkminer/lichess_db_standard_rated_2017-07.pgn"; // Should be some file on your system
+        String pgnFile = "/Users/bartoszjedrzejewski/github/chesssparkminer/lichess_db_standard_rated_2013-01.pgn"; // Should be some file on your system
         SparkConf conf = new SparkConf()
                 .setAppName("Chess Spark Miner")
                 .setMaster("local[2]");
@@ -21,23 +21,7 @@ public class ChessSparkMiner {
 
         pgnData = pgnData.filter(line -> line.length() > 1);
 
-
-        JavaRDD<String> ultraBullet = pgnData.filter(a -> getSpeedMode(a).equals("UltraBullet"));
-        JavaRDD<String> bullet = pgnData.filter(a -> getSpeedMode(a).equals("Bullet"));
-        JavaRDD<String> blitz = pgnData.filter(a -> getSpeedMode(a).equals("Blitz"));
-        JavaRDD<String> classical = pgnData.filter(a -> getSpeedMode(a).equals("Classical"));
-
-        System.out.println("ultraBullet performance");
-        printOpeningsPerformance(ultraBullet);
-
-        System.out.println("bullet performance");
-        printOpeningsPerformance(bullet);
-
-        System.out.println("blitz performance");
-        printOpeningsPerformance(blitz);
-
-        System.out.println("classical performance");
-        printOpeningsPerformance(classical);
+        computeGameStats(pgnData);
 
         sc.stop();
     }
@@ -54,19 +38,77 @@ public class ChessSparkMiner {
         System.out.println("Draw: " + draw);
     }
 
-    private static void printOpeningsPerformance(JavaRDD<String> pgnData) {
-        JavaPairRDD<String, ScoreCount> openingToGameScore = pgnData
-                .mapToPair(game -> new Tuple2<>(getOpening(game), new ScoreCount(getScore(game), 1)))
+    private static void computeGameStats(JavaRDD<String> pgnData) {
+        JavaPairRDD<GameKey, ScoreCount> openingToGameScore = pgnData
+                .mapToPair(game -> new Tuple2<>(createGameKey(game), new ScoreCount(getScore(game), 1)))
                 .reduceByKey((score1, score2) -> score1.add(score2));
 
         //openingToGameScore = openingToGameScore.filter(a -> a._2.count > 100);
 
-        List<Tuple2<String, ScoreCount>> gamesToScore = openingToGameScore.collect();
-        gamesToScore = new ArrayList<>(gamesToScore);
-        gamesToScore.sort((a, b) -> a._2.getAverageScore() > b._2.getAverageScore() ? 1 : -1);
-        for(Tuple2<String, ScoreCount> gameToScore : gamesToScore){
-            System.out.printf("%s : %.3f from %.0f games%n", gameToScore._1 ,gameToScore._2.getAverageScore(), gameToScore._2.getCount());
+        List<Tuple2<GameKey, ScoreCount>> analyzedOpenings = openingToGameScore.collect();
+        analyzedOpenings = new ArrayList<>(analyzedOpenings);
+        analyzedOpenings.sort((a, b) -> Double.compare(a._2.getCount(),b._2.getCount()));
+        for(Tuple2<GameKey, ScoreCount> tuple : analyzedOpenings){
+            //System.out.printf("%s : %.3f from %.0f games%n", gameToScore._1 ,gameToScore._2.getAverageScore(), gameToScore._2.getCount());
+            System.out.println(tuple._1.toString()+"|"+tuple._2.toString());
         }
+    }
+
+    private static GameKey createGameKey(String game) {
+        return new GameKey(getOpening(game),
+                getPgnField(game, "ECO"),
+                getSpeedMode(game),
+                getAvgEloClass(game),
+                getRatingDiffClass(game)
+                );
+    }
+
+    private static String getRatingDiffClass(String game) {
+        String whiteEloS = getPgnField(game, "WhiteElo");
+        String blackEloS = getPgnField(game, "BlackElo");
+        if(whiteEloS.contains("?") || blackEloS.contains("?")){
+            return "?";
+        }
+        double whiteElo = Double.parseDouble(whiteEloS);
+        double blackElo = Double.parseDouble(blackEloS);
+        double diff = Math.abs(whiteElo - blackElo);
+        String stronger = whiteElo > blackElo ? "White" : "Black";
+        if(diff < 100){
+            return "White=Black";
+        } else if(diff < 300){
+            return stronger+"+200";
+        } else if(diff < 500){
+            return stronger+"+400";
+        } else {
+            return stronger+"+500+";
+        }
+    }
+
+    private static String getAvgEloClass(String game) {
+        String whiteEloS = getPgnField(game, "WhiteElo");
+        String blackEloS = getPgnField(game, "BlackElo");
+        if(whiteEloS.contains("?") || blackEloS.contains("?")){
+            return "?";
+        }
+        double whiteElo = Double.parseDouble(whiteEloS);
+        double blackElo = Double.parseDouble(blackEloS);
+        double average = (whiteElo+blackElo)/2;
+        if(average < 1200){
+            return "0-1199";
+        } else if(average < 1400){
+            return "1200-1399";
+        } else if(average < 1600){
+            return "1400-1599";
+        } else if(average < 1800){
+            return "1600-1799";
+        } else if(average < 2000){
+            return "1800-1899";
+        } else if(average < 2200){
+            return "2000-2199";
+        } else if(average < 2400){
+            return "2200-2399";
+        } else
+            return "2400+";
     }
 
     public static String getSpeedMode(String pgn){
@@ -83,12 +125,15 @@ public class ChessSparkMiner {
             return "?";
     }
 
+    public static String getPgnField(String pgn, String field){
+        pgn = pgn.substring(pgn.indexOf(field));
+        pgn = pgn.substring(pgn.indexOf("\"")+1);
+        return pgn.substring(0, pgn.indexOf("\""));
+    }
+
 
     public static String getOpening(String pgn){
-        int i = pgn.indexOf("[Opening \"");
-        pgn = pgn.substring(i+10);
-        int e = pgn.indexOf("\"");
-        return pgn.substring(0, e);
+        return getPgnField(pgn, "Opening");
     }
 
     public static double getScore(String pgn){
