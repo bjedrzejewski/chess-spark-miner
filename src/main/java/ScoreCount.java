@@ -69,6 +69,10 @@ public class ScoreCount implements java.io.Serializable{
 
     @Override
     public String toString() {
-        return getAverageScore() + "|" + count + "|" + drawCount  + "|" + whiteWinCount  + "|" + blackWinCount;
+        return getAverageScore() + "|" + score + "|" + count + "|" + drawCount  + "|" + whiteWinCount  + "|" + blackWinCount;
+    }
+
+    public static String getFileHeader() {
+        return "averageScore|score|count|drawCount|whiteWinCount|blackWinCount";
     }
 }

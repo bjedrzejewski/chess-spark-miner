@@ -4,11 +4,13 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import scala.Tuple2;
 
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 public class ChessSparkMiner {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         String pgnFile = "/Users/bartoszjedrzejewski/github/chesssparkminer/lichess_db_standard_rated_2013-01.pgn"; // Should be some file on your system
         SparkConf conf = new SparkConf()
                 .setAppName("Chess Spark Miner")
@@ -38,7 +40,7 @@ public class ChessSparkMiner {
         System.out.println("Draw: " + draw);
     }
 
-    private static void computeGameStats(JavaRDD<String> pgnData) {
+    private static void computeGameStats(JavaRDD<String> pgnData) throws IOException {
         JavaPairRDD<GameKey, ScoreCount> openingToGameScore = pgnData
                 .mapToPair(game -> new Tuple2<>(createGameKey(game), new ScoreCount(getScore(game), 1)))
                 .reduceByKey((score1, score2) -> score1.add(score2));
@@ -48,10 +50,14 @@ public class ChessSparkMiner {
         List<Tuple2<GameKey, ScoreCount>> analyzedOpenings = openingToGameScore.collect();
         analyzedOpenings = new ArrayList<>(analyzedOpenings);
         analyzedOpenings.sort((a, b) -> Double.compare(a._2.getCount(),b._2.getCount()));
+
+        //write out the analyzed openings
+        FileWriter writer = new FileWriter("openingsFile");
+        writer.write(GameKey.getFileHeader()+"|"+ScoreCount.getFileHeader()+"\n");
         for(Tuple2<GameKey, ScoreCount> tuple : analyzedOpenings){
-            //System.out.printf("%s : %.3f from %.0f games%n", gameToScore._1 ,gameToScore._2.getAverageScore(), gameToScore._2.getCount());
-            System.out.println(tuple._1.toString()+"|"+tuple._2.toString());
+            writer.write(tuple._1.toString()+"|"+tuple._2.toString()+"\n");
         }
+        writer.close();
     }
 
     private static GameKey createGameKey(String game) {

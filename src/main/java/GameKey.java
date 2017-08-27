@@ -64,4 +64,8 @@ public class GameKey implements Serializable{
     public String toString() {
         return opening + "|" + eco + "|" + tempo + "|" + avgEloClass + "|" + ratingDiffClass;
     }
+
+    public static String getFileHeader() {
+        return "opening|eco|tempo|avgEloClass|ratingDiffClass";
+    }
 }
