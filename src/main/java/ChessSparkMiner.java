@@ -11,13 +11,13 @@ import java.util.List;
 
 public class ChessSparkMiner {
     public static void main(String[] args) throws IOException {
-        String pgnFile = "/Users/bartoszjedrzejewski/github/chesssparkminer/lichess_db_standard_rated_2013-01.pgn"; // Should be some file on your system
+        String pgnFile = "/Users/bartoszjedrzejewski/github/chesssparkminer/lichess_db_standard_rated_2017-07.pgn"; // Should be some file on your system
         SparkConf conf = new SparkConf()
                 .setAppName("Chess Spark Miner")
                 .setMaster("local[2]");
 
         JavaSparkContext sc = new JavaSparkContext(conf);
-        sc.setLogLevel("ERROR");
+        sc.setLogLevel("INFO");
         sc.hadoopConfiguration().set("textinputformat.record.delimiter", "[Event");
         JavaRDD<String> pgnData = sc.textFile(pgnFile);
 
@@ -134,7 +134,10 @@ public class ChessSparkMiner {
     public static String getPgnField(String pgn, String field){
         pgn = pgn.substring(pgn.indexOf(field));
         pgn = pgn.substring(pgn.indexOf("\"")+1);
-        return pgn.substring(0, pgn.indexOf("\""));
+        pgn = pgn.substring(0, pgn.indexOf("\""));
+        if(pgn.contains("\n"))
+            return "?";
+        return pgn;
     }
 
 
