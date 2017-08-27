@@ -59,13 +59,13 @@ public class ChessSparkMiner {
                 .mapToPair(game -> new Tuple2<>(getOpening(game), new ScoreCount(getScore(game), 1)))
                 .reduceByKey((score1, score2) -> score1.add(score2));
 
-        openingToGameScore = openingToGameScore.filter(a -> a._2.count > 100);
+        //openingToGameScore = openingToGameScore.filter(a -> a._2.count > 100);
 
         List<Tuple2<String, ScoreCount>> gamesToScore = openingToGameScore.collect();
         gamesToScore = new ArrayList<>(gamesToScore);
         gamesToScore.sort((a, b) -> a._2.getAverageScore() > b._2.getAverageScore() ? 1 : -1);
         for(Tuple2<String, ScoreCount> gameToScore : gamesToScore){
-            System.out.printf("%s : %.3f from %.0f games%n", gameToScore._1 ,gameToScore._2.getAverageScore(), gameToScore._2.count);
+            System.out.printf("%s : %.3f from %.0f games%n", gameToScore._1 ,gameToScore._2.getAverageScore(), gameToScore._2.getCount());
         }
     }
 
@@ -98,32 +98,5 @@ public class ChessSparkMiner {
             return 0.5;
         else
             return 0;
-    }
-
-    public static class ScoreCount implements java.io.Serializable{
-
-        private final double score;
-        private final double count;
-
-        public ScoreCount(double score, double count) {
-            this.score = score;
-            this.count = count;
-        }
-
-        public double getAverageScore() {
-            return score/count;
-        }
-
-        public double getScore() {
-            return score;
-        }
-
-        public double getCount() {
-            return count;
-        }
-
-        public ScoreCount add(ScoreCount a){
-            return new ScoreCount(a.score + score, count + a.count);
-        }
     }
 }
