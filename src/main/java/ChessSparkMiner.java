@@ -20,11 +20,24 @@ public class ChessSparkMiner {
 
         pgnData = pgnData.filter(line -> line.length() > 1);
 
+        printOpeningsPerformance(pgnData);
+
+        sc.stop();
+    }
+
+    private static void printWinDrawLose(JavaRDD<String> pgnData) {
         long records = pgnData.count();
         long whiteWin = pgnData.filter(s -> s.contains("1-0")).count();
         long blackWin = pgnData.filter(s -> s.contains("0-1")).count();
         long draw = pgnData.filter(s -> s.contains("1/2-1/2")).count();
 
+        System.out.println("Processed games: " + records);
+        System.out.println("White wins: " + whiteWin);
+        System.out.println("Black wins: " + blackWin);
+        System.out.println("Draw: " + draw);
+    }
+
+    private static void printOpeningsPerformance(JavaRDD<String> pgnData) {
         JavaPairRDD<String, ScoreCount> openingToGameScore = pgnData
                 .mapToPair(game -> new Tuple2<>(getOpening(game), new ScoreCount(getScore(game), 1)))
                 .reduceByKey((score1, score2) -> score1.add(score2));
@@ -35,15 +48,8 @@ public class ChessSparkMiner {
         gamesToScore = new ArrayList<>(gamesToScore);
         gamesToScore.sort((a, b) -> a._2.getAverageScore() > b._2.getAverageScore() ? 1 : -1);
         for(Tuple2<String, ScoreCount> gameToScore : gamesToScore){
-            System.out.println(gameToScore._1+" : "+ gameToScore._2.getAverageScore()+" from "+gameToScore._2.count+" games");
+            System.out.printf("%s : %.3f from %.0f games%n", gameToScore._1 ,gameToScore._2.getAverageScore(), gameToScore._2.count);
         }
-
-        System.out.println("Processed games: " + records);
-        System.out.println("White wins: " + whiteWin);
-        System.out.println("Black wins: " + blackWin);
-        System.out.println("Draw: " + draw);
-
-        sc.stop();
     }
 
 
