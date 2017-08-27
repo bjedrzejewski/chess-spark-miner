@@ -9,18 +9,35 @@ import java.util.List;
 
 public class ChessSparkMiner {
     public static void main(String[] args) {
-        String pgnFile = "/Users/bartoszjedrzejewski/github/chesssparkminer/lichess_db_standard_rated_2013-01.pgn.bz2"; // Should be some file on your system
+        String pgnFile = "/Users/bartoszjedrzejewski/github/chesssparkminer/lichess_db_standard_rated_2013-01.pgn"; // Should be some file on your system
         SparkConf conf = new SparkConf()
                 .setAppName("Chess Spark Miner")
                 .setMaster("local[2]");
 
         JavaSparkContext sc = new JavaSparkContext(conf);
+        sc.setLogLevel("ERROR");
         sc.hadoopConfiguration().set("textinputformat.record.delimiter", "[Event");
         JavaRDD<String> pgnData = sc.textFile(pgnFile);
 
         pgnData = pgnData.filter(line -> line.length() > 1);
 
-        printOpeningsPerformance(pgnData);
+
+        JavaRDD<String> ultraBullet = pgnData.filter(a -> getSpeedMode(a).equals("UltraBullet"));
+        JavaRDD<String> bullet = pgnData.filter(a -> getSpeedMode(a).equals("Bullet"));
+        JavaRDD<String> blitz = pgnData.filter(a -> getSpeedMode(a).equals("Blitz"));
+        JavaRDD<String> classical = pgnData.filter(a -> getSpeedMode(a).equals("Classical"));
+
+        System.out.println("ultraBullet performance");
+        printOpeningsPerformance(ultraBullet);
+
+        System.out.println("bullet performance");
+        printOpeningsPerformance(bullet);
+
+        System.out.println("blitz performance");
+        printOpeningsPerformance(blitz);
+
+        System.out.println("classical performance");
+        printOpeningsPerformance(classical);
 
         sc.stop();
     }
@@ -50,6 +67,20 @@ public class ChessSparkMiner {
         for(Tuple2<String, ScoreCount> gameToScore : gamesToScore){
             System.out.printf("%s : %.3f from %.0f games%n", gameToScore._1 ,gameToScore._2.getAverageScore(), gameToScore._2.count);
         }
+    }
+
+    public static String getSpeedMode(String pgn){
+        pgn = pgn.substring(0, pgn.indexOf("]")); //to avoid words appearing in player names
+        if(pgn.contains("UltraBullet"))
+            return "UltraBullet";
+        else if(pgn.contains("Bullet"))
+            return "Bullet";
+        else if(pgn.contains("Blitz"))
+            return "Blitz";
+        else if(pgn.contains("Classical"))
+            return "Classical";
+        else
+            return "?";
     }
 
 
