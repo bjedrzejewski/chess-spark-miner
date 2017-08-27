@@ -9,7 +9,7 @@ import java.util.List;
 
 public class ChessSparkMiner {
     public static void main(String[] args) {
-        String pgnFile = "/Users/bartoszjedrzejewski/github/chesssparkminer/lichess_db_standard_rated_2013-01.pgn"; // Should be some file on your system
+        String pgnFile = "/Users/bartoszjedrzejewski/github/chesssparkminer/lichess_db_standard_rated_2017-07.pgn"; // Should be some file on your system
         SparkConf conf = new SparkConf()
                 .setAppName("Chess Spark Miner")
                 .setMaster("local[2]");
