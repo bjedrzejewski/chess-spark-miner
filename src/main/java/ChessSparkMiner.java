@@ -11,7 +11,39 @@ import java.util.List;
 
 public class ChessSparkMiner {
     public static void main(String[] args) throws IOException {
-        String pgnFile = "/Users/bartoszjedrzejewski/github/chesssparkminer/lichess_db_standard_rated_2017-02.pgn"; // Should be some file on your system
+        consolidateOpeningFiles("/Users/bartoszjedrzejewski/github/chesssparkminer/openingFiles/*openingsFile");
+    }
+
+    private static void consolidateOpeningFiles(String dirPath) throws IOException {
+        SparkConf conf = new SparkConf()
+                .setAppName("Chess Spark Miner")
+                .setMaster("local[2]");
+        JavaSparkContext sc = new JavaSparkContext(conf);
+        sc.setLogLevel("INFO");
+        JavaRDD<String> pgnData = sc.textFile(dirPath);
+        pgnData = pgnData.filter(line -> !line.contains("opening|eco|tempo")); //remove the header lines
+        pgnData = pgnData.filter(line -> line.length() > 10);
+
+        JavaPairRDD<GameKey, ScoreCount> openingToGameScore = pgnData
+                .mapToPair(line -> createTupleFromLine(line))
+                .reduceByKey((score1, score2) -> score1.add(score2));
+
+        saveAnalyzedOpeningsToFile(openingToGameScore.collect(), "consolidatedOpeningFile");
+
+    }
+
+    private static Tuple2<GameKey, ScoreCount> createTupleFromLine(String line){
+        String[] parts = line.split("\\|");
+        GameKey gameKey = new GameKey(parts[0], parts[1], parts[2], parts[3], parts[4]);
+        ScoreCount scoreCount = new ScoreCount(Double.parseDouble(parts[6]),
+                Double.parseDouble(parts[7]),
+                Double.parseDouble(parts[8]),
+                Double.parseDouble(parts[9]),
+                Double.parseDouble(parts[10]));
+        return new Tuple2<>(gameKey, scoreCount);
+    }
+
+    private static void processPGNFile(String filePath) throws IOException {
         SparkConf conf = new SparkConf()
                 .setAppName("Chess Spark Miner")
                 .setMaster("local[2]");
@@ -19,7 +51,7 @@ public class ChessSparkMiner {
         JavaSparkContext sc = new JavaSparkContext(conf);
         sc.setLogLevel("INFO");
         sc.hadoopConfiguration().set("textinputformat.record.delimiter", "[Event");
-        JavaRDD<String> pgnData = sc.textFile(pgnFile);
+        JavaRDD<String> pgnData = sc.textFile(filePath);
 
         pgnData = pgnData.filter(line -> line.length() > 1);
 
@@ -52,7 +84,11 @@ public class ChessSparkMiner {
         analyzedOpenings.sort((a, b) -> Double.compare(a._2.getCount(),b._2.getCount()));
 
         //write out the analyzed openings
-        FileWriter writer = new FileWriter("openingsFile");
+        saveAnalyzedOpeningsToFile(analyzedOpenings, "openingsFile");
+    }
+
+    private static void saveAnalyzedOpeningsToFile(List<Tuple2<GameKey, ScoreCount>> analyzedOpenings, String fileName) throws IOException {
+        FileWriter writer = new FileWriter(fileName);
         writer.write(GameKey.getFileHeader()+"|"+ScoreCount.getFileHeader()+"\n");
         for(Tuple2<GameKey, ScoreCount> tuple : analyzedOpenings){
             writer.write(tuple._1.toString()+"|"+tuple._2.toString()+"\n");
