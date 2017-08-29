@@ -5,8 +5,10 @@ public class ScoreCount implements java.io.Serializable{
     private final double drawCount;
     private final double whiteWinCount;
     private final double blackWinCount;
+    private final double sumWhiteElo;
+    private final double sumBlackElo;
 
-    public ScoreCount(double score, double count) {
+    public ScoreCount(double score, double count, double sumWhiteElo, double sumBlackElo) {
         if(score == 1) {
             whiteWinCount = 1;
             drawCount = 0;
@@ -25,14 +27,18 @@ public class ScoreCount implements java.io.Serializable{
 
         this.score = score;
         this.count = count;
+        this.sumBlackElo = sumBlackElo;
+        this.sumWhiteElo = sumWhiteElo;
     }
 
-    public ScoreCount(double score, double count, double drawCount, double whiteWinCount, double blackWinCount) {
+    public ScoreCount(double score, double count, double drawCount, double whiteWinCount, double blackWinCount, double sumWhiteElo, double sumBlackElo) {
         this.score = score;
         this.count = count;
         this.drawCount = drawCount;
         this.whiteWinCount = whiteWinCount;
         this.blackWinCount = blackWinCount;
+        this.sumBlackElo = sumBlackElo;
+        this.sumWhiteElo = sumWhiteElo;
     }
 
     public double getDrawCount() {
@@ -64,15 +70,33 @@ public class ScoreCount implements java.io.Serializable{
                 count + a.count,
                 drawCount + a.drawCount,
                 whiteWinCount + a.whiteWinCount,
-                blackWinCount + a.blackWinCount);
+                blackWinCount + a.blackWinCount,
+                sumWhiteElo + a.sumWhiteElo,
+                sumBlackElo +a.sumBlackElo);
+    }
+
+    public double getAverageWhiteElo() {
+        return sumWhiteElo/count;
+    }
+
+    public double getAverageBlackElo() {
+        return sumBlackElo/count;
     }
 
     @Override
     public String toString() {
-        return getAverageScore() + "|" + score + "|" + count + "|" + drawCount  + "|" + whiteWinCount  + "|" + blackWinCount;
+        return getAverageScore() + "|" + score
+                + "|" + count
+                + "|" + drawCount
+                + "|" + whiteWinCount
+                + "|" + blackWinCount
+                + "|" + getAverageWhiteElo()
+                + "|" + getAverageBlackElo()
+                + "|" + sumWhiteElo
+                + "|" + sumBlackElo;
     }
 
     public static String getFileHeader() {
-        return "averageScore|score|count|drawCount|whiteWinCount|blackWinCount";
+        return "averageScore|score|count|drawCount|whiteWinCount|blackWinCount|averageWhiteElo|averageBlackElo|sumWhiteElo|sumBlackElo";
     }
 }

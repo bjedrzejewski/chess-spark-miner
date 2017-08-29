@@ -11,7 +11,8 @@ import java.util.List;
 
 public class ChessSparkMiner {
     public static void main(String[] args) throws IOException {
-        consolidateOpeningFiles("/Users/bartoszjedrzejewski/github/chesssparkminer/openingFiles/*openingsFile");
+        //consolidateOpeningFiles("/Users/bartoszjedrzejewski/github/chesssparkminer/openingFiles/*openingsFile");
+        processPGNFile("/Users/bartoszjedrzejewski/github/chesssparkminer/lichess_db_standard_rated_2017-01.pgn");
     }
 
     private static void consolidateOpeningFiles(String dirPath) throws IOException {
@@ -39,7 +40,9 @@ public class ChessSparkMiner {
                 Double.parseDouble(parts[7]),
                 Double.parseDouble(parts[8]),
                 Double.parseDouble(parts[9]),
-                Double.parseDouble(parts[10]));
+                Double.parseDouble(parts[10]),
+                Double.parseDouble(parts[13]),
+                Double.parseDouble(parts[14]));
         return new Tuple2<>(gameKey, scoreCount);
     }
 
@@ -74,7 +77,7 @@ public class ChessSparkMiner {
 
     private static void computeGameStats(JavaRDD<String> pgnData) throws IOException {
         JavaPairRDD<GameKey, ScoreCount> openingToGameScore = pgnData
-                .mapToPair(game -> new Tuple2<>(createGameKey(game), new ScoreCount(getScore(game), 1)))
+                .mapToPair(game -> new Tuple2<>(createGameKey(game), new ScoreCount(getScore(game), 1, getWhiteElo(game), getBlackElo(game))))
                 .reduceByKey((score1, score2) -> score1.add(score2));
 
         //openingToGameScore = openingToGameScore.filter(a -> a._2.count > 100);
@@ -103,6 +106,22 @@ public class ChessSparkMiner {
                 getAvgEloClass(game),
                 getRatingDiffClass(game)
                 );
+    }
+
+    public static double getWhiteElo(String game){
+        String whiteEloS = getPgnField(game, "WhiteElo");
+        if(whiteEloS.contains("?")){
+            return 0;
+        }
+        return Double.parseDouble(whiteEloS);
+    }
+
+    public static double getBlackElo(String game){
+        String blackEloS = getPgnField(game, "BlackElo");
+        if(blackEloS.contains("?")){
+            return 0;
+        }
+        return Double.parseDouble(blackEloS);
     }
 
     private static String getRatingDiffClass(String game) {
