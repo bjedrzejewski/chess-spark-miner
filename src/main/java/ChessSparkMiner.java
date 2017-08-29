@@ -12,7 +12,7 @@ import java.util.List;
 public class ChessSparkMiner {
     public static void main(String[] args) throws IOException {
         //consolidateOpeningFiles("/Users/bartoszjedrzejewski/github/chesssparkminer/openingFiles/*openingsFile");
-        processPGNFile("/Users/bartoszjedrzejewski/github/chesssparkminer/lichess_db_standard_rated_2017-01.pgn");
+        processPGNFile("/Users/bartoszjedrzejewski/github/chesssparkminer/lichess_db_standard_rated_2017-07.pgn");
     }
 
     private static void consolidateOpeningFiles(String dirPath) throws IOException {
