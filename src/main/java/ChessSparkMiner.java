@@ -11,8 +11,8 @@ import java.util.List;
 
 public class ChessSparkMiner {
     public static void main(String[] args) throws IOException {
-        //consolidateOpeningFiles("/Users/bartoszjedrzejewski/github/chesssparkminer/openingFiles/*openingsFile");
-        processPGNFile("/Users/bartoszjedrzejewski/github/chesssparkminer/lichess_db_standard_rated_2017-07.pgn");
+        consolidateOpeningFiles("/Users/bartoszjedrzejewski/github/chesssparkminer/eloOpeningFiles/*OpeningsFile");
+        //processPGNFile("/Users/bartoszjedrzejewski/github/chesssparkminer/lichess_db_standard_rated_2017-07.pgn");
     }
 
     private static void consolidateOpeningFiles(String dirPath) throws IOException {
@@ -163,7 +163,7 @@ public class ChessSparkMiner {
         } else if(average < 1800){
             return "1600-1799";
         } else if(average < 2000){
-            return "1800-1899";
+            return "1800-1999";
         } else if(average < 2200){
             return "2000-2199";
         } else if(average < 2400){
